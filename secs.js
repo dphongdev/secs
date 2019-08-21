@@ -2,55 +2,31 @@
 let rp = require('request-promise'),
     // request = require('request'),
     // fs = require('fs'),
-    cheerio = require('cheerio'),
+    //cheerio = require('cheerio'),
     cfg = require('./secs.cfg.js'),
+    Utils = require('./Utils.js'),
     log = console.log,
-    Utils = require('./Utils.js')
+    Message = Utils.Http.Message(cfg.pKey),
+    authenticatedCookies = ''
 
-async function fetchHomePage() {
-    log(cfg.homeUrl)
-    try {
-        var options = {
-            method: 'GET',
-            url: cfg.homeUrl,
-            headers: cfg.headers,
-            resolveWithFullResponse: true,
-            transform: (body, res) => {
-                return { cookies: res.headers['set-cookie'], body: body }
-            },
-        }
-        return await rp(options)
-    } catch (error) {
-        log(error.message)
-    }
-}
 function createJar(cookies, rp, url) {
     let jar = rp.jar()
     cookies.forEach(e => {
-        e.split(';').forEach((cookie, index) => {
-            if(index == 0)
-                jar.setCookie(rp.cookie(cookie.trim()), url)
+        e.split(';').forEach(cookie => {
+            jar.setCookie(rp.cookie(cookie.trim()), url)
         })
     })
+    return jar
 }
 async function login() {
     try {
-        let homePage = await fetchHomePage();
-        //log(homePage.body);
-        log(homePage.cookies);
-        let params = { username: cfg.username, password: cfg.password };
-        log(params)
-        log(cfg.pKey)
-        let Message = Utils.Http.Message(cfg.pKey)
-        let encryptedForm = Message.encryptParams(params)
+        let encryptedForm = Message.encryptParams({ username: cfg.username, password: cfg.password })
         log(encryptedForm)
         log(cfg.loginUrl)
-        var jar = createJar(homePage.cookies, rp, cfg.homeUrl)
         let options = {
             method: 'POST',
             url: cfg.loginUrl,
             headers: cfg.headers,
-            jar: jar,
             form: encryptedForm,
             resolveWithFullResponse: true,
             transform: (body, res) => {
@@ -60,52 +36,60 @@ async function login() {
         let res = await rp(options)
         log(res.body)
         log(res.headers)
-        let jsonResultBodyLogin = JSON.parse(res.body)
+        let jsonLogin = JSON.parse(res.body)
         try {
-            var result = JSON.parse(jsonResultBodyLogin.Result);
-            //result.Data = '%2BJ%2B6s77FZa9TbgZo7PXqaA%3D%3D';
-            log('result.Data:%s | result.IV:%s',result.Data, result.IV)
+            var result = JSON.parse(jsonLogin.Result);
+            log('result.Data: %s | result.IV: %s', result.Data, result.IV)
             var plainText = Message.Decrypt(result.Data, result.IV);
-            //log('plainText:%s',plainText)
             try {
-                jsonResultBodyLogin.Result = JSON.parse(plainText);
+                jsonLogin.Result = JSON.parse(plainText);
             } catch (e) {
-                jsonResultBodyLogin.Result = plainText;
+                jsonLogin.Result = plainText;
             }
-            log('Result:%s',jsonResultBodyLogin.Result)
+            log('Result: %s', jsonLogin.Result)
         } catch (e) {
             log(e)
         }
         //log(response.headers)
-        fetchAdminPage(res.headers['set-cookie'])
+        authenticatedCookies = res.headers['set-cookie']
+        fetchAdminPage(authenticatedCookies)
     } catch (error) {
         log(error.message)
     }
 }
-async function fetchAdminPage(cookies) {
-    // let response = await rp(options)
-    // log(response)
-    const request = require('request');
-    var jarAdmin = request.jar()
-    cookies.forEach(e => {
-        e.split(';').forEach((cookie, index) => {
-            //if(index === 0)
-            jarAdmin.setCookie(request.cookie(cookie.trim()), cfg.adminUrl)
-        })
-    })
+async function fetchAdminPage(authenticatedCookies) {
+    log(authenticatedCookies)
     let options = {
         method: 'GET',
         url: cfg.adminUrl,
         headers: cfg.headers,
-        jar: jarAdmin,
+        jar: createJar(authenticatedCookies, rp, cfg.adminUrl),
+        resolveWithFullResponse: true,
+        transform: (body, res) => {
+            return { body: body, headers: res.headers }
+        }
     }
-    log(options)
-    request(options, function (error, response, body) {
-        console.error('error:', error); // Print the error if one occurred
-        console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
-        console.log('body:', body); // Print the HTML for the Google homepage.
-    });
+    //log(options)
+    let res = await rp(options)
+    //log(res.body)
 }
+async function fetchDataWhiteLabel(nameWhiteLabel) {
+    log(authenticatedCookies)
+    let options = {
+        method: 'GET',
+        url: cfg.adminUrl,
+        headers: cfg.headers,
+        jar: createJar(authenticatedCookies, rp, cfg.adminUrl),
+        resolveWithFullResponse: true,
+        transform: (body, res) => {
+            return { body: body, headers: res.headers }
+        }
+    }
+    //log(options)
+    let res = await rp(options)
+    //log(res.body)
+}
+
 
 module.exports = {
     login: login
