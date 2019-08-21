@@ -29,5 +29,6 @@
     }
     //login()
     let secs = require('./secs')
-    secs.login();
+    //secs.login();
+    secs.fetchDataWhiteLabel('hanabet')
 })()
