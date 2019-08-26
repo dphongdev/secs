@@ -30,5 +30,5 @@
     //login()
     let secs = require('./secs')
     //secs.login();
-    secs.fetchDataWhiteLabel('hanabet')
+    secs.fetchWLSites('hanabet')
 })()
