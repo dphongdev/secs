@@ -1,30 +1,32 @@
 
 let rp = require('request-promise'),
-    // request = require('request'),
+    request = require('request'),
     // fs = require('fs'),
     cheerio = require('cheerio'),
     cfg = require('./secs.cfg.js'),
     Utils = require('./Utils.js'),
     log = console.log,
-    Message = Utils.Http.Message(cfg.pKey),
+    Message = '', //Utils.Http.Message(cfg.pKey),
     //authenticatedCookies = ['borderproxy-token=SHQjd0aZkLkkm1bBkDbR-Jm2d_lPUyU2ECRIRPpDltE=; Path=/; Expires=Wed, 28 Aug 2019 07:30:37 GMT; HttpOnly']
     authenticatedCookies = ''
 
 
 function createJar(cookies, rp, url) {
     let jar = rp.jar()
-    cookies.forEach(e => {
-        e.split(';').forEach(cookie => {
-            jar.setCookie(rp.cookie(cookie.trim()), url)
-        })
+    cookies.forEach((e,i) => {
+        //if(i == 0)
+            e.split(';').forEach(cookie => {
+                jar.setCookie(rp.cookie(cookie.trim()), url)
+            })
     })
     return jar
 }
 async function login() {
+    log('|==> Login: %s', cfg.loginUrl)
     try {
+        Message = Utils.Http.Message(cfg.pKey)
         let encryptedForm = Message.encryptParams({ username: cfg.username, password: cfg.password })
-        log(encryptedForm)
-        log(cfg.loginUrl)
+        //log(encryptedForm)
         let options = {
             method: 'POST',
             url: cfg.loginUrl,
@@ -36,7 +38,7 @@ async function login() {
             }
         }
         let res = await rp(options)
-        log(res.body)
+        //log(res.body)
         log(res.headers)
         ///// decrypt path //////
         // let jsonLogin = JSON.parse(res.body)
@@ -54,14 +56,15 @@ async function login() {
         //     log(e)
         // }
         let cookies = res.headers['set-cookie']
-        Utils.File.saveCookies(cfg.fileCookies, cookies)
+        log(await Utils.File.saveTextFile(cfg.fileCookies, cookies))
+        log(cookies)
         return cookies
     } catch (error) {
         throw error.message
     }
 
 }
-async function fetchAdminPage(authenticatedCookies) {
+async function fetchAdminPage() {
     log(authenticatedCookies)
     let options = {
         method: 'GET',
@@ -77,16 +80,21 @@ async function fetchAdminPage(authenticatedCookies) {
     let res = await rp(options)
     //log(res.body)
 }
-async function isValidCookies(authenticatedCookies) {
+async function isAuthenticatedCookies() {
+    log('|==> Authenticate cookies')
     // cookies is in memory
     try {
-        if (authenticatedCookies === '' || authenticatedCookies === null || authenticatedCookies === undefined)
-            authenticatedCookies = [(await Utils.File.readCookies(cfg.fileCookies))]
-        log(authenticatedCookies)        
+        if (authenticatedCookies === '' || authenticatedCookies === null || authenticatedCookies === undefined){
+            authenticatedCookies = [(await Utils.File.readTextFile(cfg.fileCookies))]
+            log('Loaded cookies file:')
+            log(authenticatedCookies)
+        }  
+        log('|==> Send authentication request: %s', cfg.adminUrl)
         let options = {
             method: 'GET',
             url: cfg.adminUrl,
             headers: cfg.headers,
+            // note : use loginUrl will fetch
             jar: createJar(authenticatedCookies, rp, cfg.adminUrl),
             resolveWithFullResponse: true,
             transform: (body, res) => {
@@ -94,9 +102,11 @@ async function isValidCookies(authenticatedCookies) {
             }
         }
         let res = await rp(options)
-        //log(res.headers)
-        let placeholder = cheerio.load(res.body)('#txt_username').attr('placeholder');
-        return placeholder === undefined
+        log(res.headers)
+        await Utils.File.saveTextFile('admin' + new Date().getTime() + '.html', res.body)
+        let isAuthenticated = cheerio.load(res.body)('#container-admin-account').attr('data-name') === 'admin-account';
+        log('|==> Authencitated: %s', isAuthenticated)
+        return isAuthenticated
     } catch (error) {
         log(error)
         return false
@@ -120,10 +130,20 @@ function decrypt(body) {
     return json.Result;
 }
 async function fetchWLSites(nameWhiteLabel, skipValidationCookies) {
-    if(skipValidationCookies === undefined || skipValidationCookies === false)
-        if (!(await isValidCookies(authenticatedCookies))) 
-            authenticatedCookies = await login()
+    // if (skipValidationCookies === undefined || skipValidationCookies === false)
+    //     if (!(await isAuthenticatedCookies())){
+    //         log('|==> Authenticated cookie is expried')
+    //         authenticatedCookies = await login()
+    //     }
+    
+    //authenticatedCookies = await login()
+    authenticatedCookies = [(await Utils.File.readTextFile(cfg.fileCookies))]
+    Message = Utils.Http.Message()
+    log('|==> fetchWLSites: %s', cfg.listWLSiteUrl)
     log(authenticatedCookies)
+    var authenticatedJar = createJar(authenticatedCookies, rp, cfg.listWLSiteUrl)
+    log(authenticatedJar)
+    //Message = Utils.Http.Message()
     let data = {
         CNAMEID: 0,
         group: "0",
@@ -137,15 +157,29 @@ async function fetchWLSites(nameWhiteLabel, skipValidationCookies) {
         url: cfg.listWLSiteUrl,
         headers: cfg.headers,
         form: Message.encryptParams(data),
-        jar: createJar(authenticatedCookies, rp, cfg.listWLSiteUrl),
-        resolveWithFullResponse: true,
-        transform: (body, res) => {
-            return { body: body, headers: res.headers }
-        }
+        jar: authenticatedJar
     }
-    let res = await rp(options)
-    log(res.body)
-    return decrypt(res.body)
+    request(options, async function (error, response, body) {
+        console.error('error:', error)
+        console.log('statusCode:', response && response.statusCode)
+        console.log('body:', body)
+        options = {
+            method: 'POST',
+            url: cfg.listWLSiteUrl,
+            headers: cfg.headers,
+            form: Message.encryptParams(data),
+            jar: createJar(authenticatedCookies, rp, cfg.listWLSiteUrl),
+            transform: (body, res) => {
+                return { body: body, headers: res.headers }
+            }
+        }
+        let res = await rp(options)
+        .catch(function (err) {
+            log(err.message)
+            return 0
+        })
+        log(decrypt(res.body))
+    });
 }
 function getWLMembersite(nameWhiteLabel, dataSite) {
     let sites = dataSite.Sites
@@ -159,10 +193,11 @@ function getWLMembersite(nameWhiteLabel, dataSite) {
     return siteId
 }
 async function fetchWLDomains(nameWhiteLabel) {
-    if (!(await isValidCookies(authenticatedCookies))) authenticatedCookies = await login()
-    log(authenticatedCookies)
+    if (!(await isAuthenticatedCookies()))
+        authenticatedCookies = await login()
+    //log(authenticatedCookies)
     let data = {
-        siteId : getWLMembersite(nameWhiteLabel, await fetchWLSites(nameWhiteLabel, true)) // 51
+        siteId: getWLMembersite(nameWhiteLabel, await fetchWLSites(nameWhiteLabel, true)) // 51
     }
     let options = {
         method: 'POST',
@@ -181,15 +216,16 @@ async function fetchWLDomains(nameWhiteLabel) {
 }
 
 // TEST FUNCTIONS
-(async function(){
-    login()
-    log(await isValidCookies(authenticatedCookies))
-    //log(getWLMembersite('hanabet', ''))
-    //fetchWLDomains('hanabet')
+(async function () {
+    //log(await login())
+    //log(await isAuthenticatedCookies(authenticatedCookies))
+    fetchWLSites(cfg.nameWLTest)
+    //fetchWLDomains(cfg.nameWLTest)
     //log(await Utils.File.readCookies(cfg.fileCookies));
 })()
 
 module.exports = {
+    authenticatedCookies: authenticatedCookies,
     login: login,
     fetchWLSites: fetchWLSites
 }

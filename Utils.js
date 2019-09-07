@@ -1,20 +1,22 @@
 const CryptoJS = require("crypto-js")
 const JSEncrypt = require('node-jsencrypt')
 const fs = require('fs')
+const cfg = require('./secs.cfg')
 var Utils = {
+    LocalStorage: {
+        keyAES64: ''
+    },
     File: {
-        saveCookies: function (fileName, content) {
+        saveTextFile: function (fileName, content) {
             return new Promise((resolve, reject) => {
-                //content = "['" + content + "']"
                 fs.writeFile(fileName, content, function (err) {
                     if (err) reject(err)
                     var statusText = 'write file > ' + fileName + ' success'
-                    console.log(statusText)
                     resolve(statusText)
                 })
             })
         },
-        readCookies: function (fileName) {
+        readTextFile: function (fileName) {
             return new Promise((resolve, reject) => {
                 fs.readFile(fileName, 'utf8', function (err, data) {
                     if (err) return reject(error)
@@ -60,9 +62,18 @@ var Utils = {
                 mode = "rsa*aes";
                 var key = CryptoJS.lib.WordArray.random(16);
                 aesKey64 = CryptoJS.enc.Base64.stringify(key);
+                Utils.LocalStorage.keyAES64 = aesKey64
+                console.log('Utils.LocalStorage.keyAES64:%s', aesKey64)
+                Utils.File.saveTextFile(cfg.fileAESKey, aesKey64)
                 //localStorage.setItem("aes-key", aesKey64);
             } else {
                 mode = "aes";
+                aesKey64 = Utils.LocalStorage.keyAES64
+                console.log('aesKey64:%s', aesKey64)
+                Utils.File.readTextFile(cfg.fileAESKey).then((key) =>  {
+                    aesKey64 = key
+                    log(aesKey64)
+                })
                 //aesKey64 = localStorage.getItem("aes-key");
             }
 
