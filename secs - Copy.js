@@ -10,13 +10,11 @@ let rp = require('request-promise'),
     //authenticatedCookies = ['borderproxy-token=SHQjd0aZkLkkm1bBkDbR-Jm2d_lPUyU2ECRIRPpDltE=; Path=/; Expires=Wed, 28 Aug 2019 07:30:37 GMT; HttpOnly']
     authenticatedCookies = ''
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
+
 function createJar(cookies, rp, url) {
     let jar = rp.jar()
-    cookies.forEach((e, i) => {
-        if (i == 0)
+    cookies.forEach((e,i) => {
+        if(i == 0)
             e.split(';').forEach(cookie => {
                 jar.setCookie(rp.cookie(cookie.trim()), url)
             })
@@ -86,11 +84,11 @@ async function isAuthenticatedCookies() {
     log('|==> Authenticate cookies')
     // cookies is in memory
     try {
-        if (authenticatedCookies === '' || authenticatedCookies === null || authenticatedCookies === undefined) {
+        if (authenticatedCookies === '' || authenticatedCookies === null || authenticatedCookies === undefined){
             authenticatedCookies = [(await Utils.File.readTextFile(cfg.fileCookies))]
             log('Loaded cookies file:')
             log(authenticatedCookies)
-        }
+        }  
         log('|==> Send authentication request: %s', cfg.adminUrl)
         let options = {
             method: 'GET',
@@ -133,17 +131,19 @@ function decrypt(body) {
 }
 async function fetchWLSites(nameWhiteLabel, skipValidationCookies) {
     if (skipValidationCookies === undefined || skipValidationCookies === false)
-        if (!(await isAuthenticatedCookies())) {
+        if (!(await isAuthenticatedCookies())){
             log('|==> Cookie is expried')
             authenticatedCookies = await login()
         }
-        else {
+        else{
             log('|==> Cookie is available. Use AES key')
-            Message = Utils.Http.Message()
+            Message = new Utils.Http.Message()
         }
+           
     //authenticatedCookies = await login()
+    log(authenticatedCookies)
+    
     log('|==> fetchWLSites: %s', cfg.listWLSiteUrl)
-    //log(authenticatedCookies)
     let data = {
         CNAMEID: 0,
         group: "0",
@@ -152,28 +152,42 @@ async function fetchWLSites(nameWhiteLabel, skipValidationCookies) {
         pageSize: 20,
         proxyID: 0
     }
-    await sleep(1000)
+    ///// REQUEST NORMAL /////
     let options = {
         method: 'POST',
         url: cfg.listWLSiteUrl,
         headers: cfg.headers,
         form: Message.encryptParams(data),
-        jar: createJar(authenticatedCookies, rp, cfg.listWLSiteUrl),
-        transform: (body, res) => {
-            return { body: body, headers: res.headers }
-        }
+        jar: createJar(authenticatedCookies, rp, cfg.listWLSiteUrl)
     }
-    //log(options)
-    let res = await rp(options)
-    .catch(function (err) {
-        log(err.message)
-        return []
-    })
-    //log('body:%s', res.body)
-    //log(res.headers)
-    let sites = decrypt(res.body)
+    request(options, async function (error, response, body) {
+        log('error:', error)
+        log('statusCode:', response && response.statusCode)
+        log('body:', body)
+        log(response.headers)
+    });
+
+    ///// REQUEST PROMISE /////
+    // options = {
+    //     method: 'POST',
+    //     url: cfg.listWLSiteUrl,
+    //     headers: cfg.headers,
+    //     form: Message.encryptParams(data),
+    //     jar: createJar(authenticatedCookies, rp, cfg.listWLSiteUrl),
+    //     transform: (body, res) => {
+    //         return { body: body, headers: res.headers }
+    //     }
+    // }
+    // let res = await rp(options)
+    // .catch(function (err) {
+    //     log(err.message)
+    //     return 0
+    // })
+    // log('body:%s',res.body)
+    // log(res.headers)
+    //let sites = decrypt(res.body)
     //log(sites)
-    return sites
+    //return sites
 }
 function getWLMembersite(nameWhiteLabel, dataSite) {
     let sites = dataSite.Sites
@@ -213,7 +227,7 @@ async function fetchWLDomains(nameWhiteLabel) {
 (async function () {
     //log(await login())
     //log(await isAuthenticatedCookies(authenticatedCookies))
-    log(await fetchWLSites(cfg.nameWLTest))
+    fetchWLSites(cfg.nameWLTest)
     //fetchWLDomains(cfg.nameWLTest)
     //log(await Utils.File.readCookies(cfg.fileCookies));
 })()

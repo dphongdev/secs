@@ -1,0 +1,181 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <link rel="stylesheet" type="text/css" href="/res/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/res/css/daterangepicker.css" />
+    <link rel="stylesheet" type="text/css" href="/res/script/lib/jQueryUI/jquery-ui.min.css" />
+    <link rel="stylesheet" type="text/css" href="/res/script/lib/jQueryUI/jquery-ui.theme.min.css" />
+    <link rel="stylesheet" type="text/css" href="/res/script/lib/jQueryUI/jquery-ui-timepicker-addon.css" />
+    <link rel="stylesheet" type="text/css" href="/res/css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/res/sass/main.css?v=2.246">
+
+    <script src="/res/script/lib/jquery-3.2.1.min.js"></script>
+    <script src="/res/script/lib/jQueryUI/jquery-ui.min.js"></script>
+    <script src="/res/script/lib/jQueryUI/jquery-ui-timepicker-addon.js"></script>
+    <script src="/res/script/lib/popper.min.js"></script>
+    <script src="/res/script/lib/bootstrap.min.js"></script>
+    <script src="/res/script/lib/jquery.autocomplete.js"></script>
+    <script src="/res/script/lib/AES-3.1.2.js"></script>
+    <script src="/res/script/lib/jsencrypt-2.3.1.min.js"></script>
+    <script src="/res/script/plugins.js?v=2.246"></script>
+    <script src="/res/script/lib/chart.min.js?v=2.246"></script>
+    <script src="/res/script/utils.js?v=2.246"></script>
+
+    <style>
+        @font-face {
+            font-family: 'Material Icons';
+            font-style: normal;
+            font-weight: 400;
+            src: url(/res/mdl/MaterialIcons-Regular.eot);
+             
+            src: local('Material Icons'),
+                local('MaterialIcons-Regular'),
+                url(/res/mdl/MaterialIcons-Regular.woff2) format('woff2'),
+                url(/res/mdl/MaterialIcons-Regular.woff) format('woff'),
+                url(/res/mdl/MaterialIcons-Regular.ttf) format('truetype');
+        }
+
+        td>* {
+            vertical-align: middle;
+        }
+
+        tr td:last-child {
+            width: 1%;
+            white-space: nowrap;
+        }
+
+        .material-icons {
+            font-family: 'Material Icons';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            font-feature-settings: 'liga';
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .clickable {
+            cursor: pointer
+        }
+
+         
+        .autocomplete-suggestions {
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+            border: 1px solid #999;
+            background: #FFF;
+            cursor: default;
+            overflow: auto;
+            -webkit-box-shadow: 1px 4px 3px rgba(50, 50, 50, 0.64);
+            -moz-box-shadow: 1px 4px 3px rgba(50, 50, 50, 0.64);
+            box-shadow: 1px 4px 3px rgba(50, 50, 50, 0.64);
+        }
+
+        .autocomplete-suggestion {
+            padding: 2px 5px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .autocomplete-no-suggestion {
+            padding: 2px 5px;
+        }
+
+        .autocomplete-selected {
+            background: #F0F0F0;
+        }
+
+        .autocomplete-suggestions strong {
+            font-weight: bold;
+            color: #000;
+        }
+
+        .autocomplete-group {
+            padding: 2px 5px;
+            font-weight: bold;
+            font-size: 16px;
+            color: #000;
+            display: block;
+            border-bottom: 1px solid #000;
+        }
+    </style>
+
+    <script>
+        var version = "2.246";
+        var role = '1';
+        
+    </script>
+    
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>BorderProxy Admin</title>
+<style>
+    #version {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        font-size: 8px;
+        margin: 5px;
+        color: #000;
+    }
+</style>
+<script>
+    var pkey = '-----BEGIN RSA PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCsr6md5JQfMYdD\x2bgp8GclZBmJg\ndAKTjX\/fqT8k2cH8aYkiDCNhP4w\x2b5I\x2bfJNsTZOcK6Id\x2bXoCSy\x2bjz9q6G4BSnsbDd\nHM5sEh\/3iHwYZXFEs70\/BlMKv7I61ixii2aWEfne3m\/u33t6uTL4LKWqmpXc3iuP\nwWXkKptVqkl13fD3GwIDAQAB\n-----END RSA PUBLIC KEY-----\n';
+    var url = '\/api\/admin\/login';
+    var mode = '1';
+    var mg = '' == 'true';
+</script>
+<script src="/res/script/login.js?v=2.246"></script> 
+</head>
+
+<body>
+    
+<div class="container">
+    <div class="row">
+        <div class="col-lg-4 col-md-3"></div>
+        <div class="col-lg-4 col-md-6 p-0">
+            <div class="loginForm">
+                <div class="header">
+                    <img id="img_logo" src="/res/custom/logo.png">
+                </div>
+                <div class="body">
+                    <form>
+                        <div class="form-group">
+                            <label class="title">Account</label>
+                            <input type="text" class="form-control" id="txt_username" aria-describedby="emailHelp"
+                                placeholder="Username">
+                        </div>
+                        <div class="form-group">
+                            <label class="title">Password</label>
+                            <input type="password" class="form-control" id="txt_password" placeholder="Password">
+                        </div>
+                        <br>
+                        <a id="btn_login" class="btn btn-dark btn-block" href="javascript:void(0)"
+                            role="button">Login</a>
+                    </form>
+                </div>
+                <div class="footer">
+                    <a id="btn_forgotpass" href="#" style="display:none">Forgot password?</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-3"></div>
+    </div>
+</div>
+<div id="version">2.246</div>
+
+</body>
+
+</html>
