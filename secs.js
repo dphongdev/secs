@@ -133,26 +133,44 @@ async function fetchWLSites(nameWhiteLabel, skipValidationCookies) {
     }
     //log(options)
     let res = await rp(options)
-    .catch(function (err) {
-        log(err.message)
-        return []
-    })
+        .catch(function (err) {
+            log(err.message)
+            return []
+        })
     //log('body:%s', res.body)
     //log(res.headers)
     return decrypt(res.body)
 }
-function getWLMembersite(nameWhiteLabel, dataSite) {
+/**
+ * 
+ * @param {*} nameWhiteLabel 
+ * @param {*} dataSite 
+ * @param {*} type : fore use "ag", "moblie", "mb"
+ */
+function getTypeSite(nameWhiteLabel, dataSite, type) {
     let sites = dataSite.Sites
-    let siteId = 0
+    let siteId = 0,
+        siteName = ''
+    switch (type) {
+        case "ag":
+            siteName = type + "." + nameWhiteLabel + '.bpx';
+            break
+        case "mb":
+            siteName = nameWhiteLabel + '.bpx';
+            break
+        case "mo":
+            siteName = "mobile." + nameWhiteLabel + '.bpx';
+            break
+    }
     for (var site of sites) {
-        if (site.Host === nameWhiteLabel + '.bpx') {
+        if (site.Host === siteName) {
             siteId = site.ID;
             break;
         }
     }
     return siteId
 }
-async function fetchWLDomains(nameWhiteLabel) {
+async function fetchWLDomains(nameWhiteLabel, typeSite) {
     if (!(await isAuthenticatedCookies())) {
         log('|==> Cookie is expried')
         authenticatedCookies = await login()
@@ -162,7 +180,7 @@ async function fetchWLDomains(nameWhiteLabel) {
         Message = Utils.Http.Message()
     }
     let data = {
-        siteId: getWLMembersite(nameWhiteLabel, await fetchWLSites(nameWhiteLabel, true)) // 51
+        siteId: getTypeSite(nameWhiteLabel, await fetchWLSites(nameWhiteLabel, true), typeSite) // 51
     }
     await sleep(1000)
     let options = {
@@ -185,13 +203,14 @@ async function fetchWLDomains(nameWhiteLabel) {
 (async function () {
     //log(await login())
     //log(await isAuthenticatedCookies(authenticatedCookies))
-    //log(await fetchWLSites(cfg.nameWLTest))
-    log(await fetchWLDomains(cfg.nameWLTest))
+    log(await fetchWLSites(cfg.nameWLTest))
+    log(await fetchWLDomains(cfg.nameWLTest, 'mo'))
     //log(await Utils.File.readCookies(cfg.fileCookies));
 })()
 
 module.exports = {
-    authenticatedCookies: authenticatedCookies,
+    isAuthenticatedCookies: isAuthenticatedCookies,
     login: login,
-    fetchWLSites: fetchWLSites
+    fetchWLSites: fetchWLSites,
+    fetchWLDomains: fetchWLDomains
 }
