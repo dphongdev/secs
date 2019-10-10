@@ -139,16 +139,16 @@ async function fetchWLSites(nameWhiteLabel, skipValidationCookies) {
         })
     //log('body:%s', res.body)
     //log(res.headers)
-    return decrypt(res.body)
+    return decrypt(res.body).Sites
 }
 /**
  * 
  * @param {*} nameWhiteLabel 
- * @param {*} dataSite 
+ * @param {*} siteData 
  * @param {*} type : fore use "ag", "moblie", "mb"
  */
-function getTypeSite(nameWhiteLabel, dataSite, type) {
-    let sites = dataSite.Sites
+function getTypeSite(nameWhiteLabel, siteData, type) {
+    let sites = siteData
     let siteId = 0,
         siteName = ''
     switch (type) {
@@ -170,7 +170,7 @@ function getTypeSite(nameWhiteLabel, dataSite, type) {
     }
     return siteId
 }
-async function fetchWLDomains(nameWhiteLabel, typeSite) {
+async function fetchWLDomains(nameWhiteLabel, typeSite, siteData) {
     if (!(await isAuthenticatedCookies())) {
         log('|==> Cookie is expried')
         authenticatedCookies = await login()
@@ -180,9 +180,10 @@ async function fetchWLDomains(nameWhiteLabel, typeSite) {
         Message = Utils.Http.Message()
     }
     let data = {
-        siteId: getTypeSite(nameWhiteLabel, await fetchWLSites(nameWhiteLabel, true), typeSite) // 51
+        siteId: getTypeSite(nameWhiteLabel, siteData || await fetchWLSites(nameWhiteLabel, true), typeSite) // ID = 51
     }
     await sleep(1000)
+    log('|==> Fetch Domain: %s', cfg.listWLDomainUrl)
     let options = {
         method: 'POST',
         url: cfg.listWLDomainUrl,
@@ -198,13 +199,44 @@ async function fetchWLDomains(nameWhiteLabel, typeSite) {
     //log(res.body)
     return decrypt(res.body)
 }
+async function fetchWLSiteAddrs(nameWhiteLabel, typeSite, siteData) {
+    if (!(await isAuthenticatedCookies())) {
+        log('|==> Cookie is expried')
+        authenticatedCookies = await login()
+    }
+    else {
+        log('|==> Cookie is available. Use AES key')
+        Message = Utils.Http.Message()
+    }
+    
+    let data = {
+        siteId: getTypeSite(nameWhiteLabel, siteData || await fetchWLSites(nameWhiteLabel, true), typeSite)
+    }
+    await sleep(1000)
+    log('|==> Fetch Site Addrs: %s', cfg.listWLSiteAddrUrl)
+    let options = {
+        method: 'POST',
+        url: cfg.listWLSiteAddrUrl,
+        headers: cfg.headers,
+        form: Message.encryptParams(data),
+        jar: createJar(authenticatedCookies, rp, cfg.listWLSiteAddrUrl),
+        resolveWithFullResponse: true,
+        transform: (body, res) => {
+            return { body: body, headers: res.headers }
+        }
+    }
+    let res = await rp(options)
+    //log(res.body)
+    return decrypt(res.body)
+}
 
 // TEST FUNCTIONS
 (async function () {
     //log(await login())
     //log(await isAuthenticatedCookies(authenticatedCookies))
-    log(await fetchWLSites(cfg.nameWLTest))
-    log(await fetchWLDomains(cfg.nameWLTest, 'mo'))
+    //log(await fetchWLSites(cfg.nameWLTest))
+    //log(await fetchWLDomains(cfg.nameWLTest, 'mb', siteData))
+    log(await fetchWLSiteAddrs(cfg.nameWLTest, 'mb'))
     //log(await Utils.File.readCookies(cfg.fileCookies));
 })()
 
