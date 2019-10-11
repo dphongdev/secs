@@ -42,7 +42,7 @@ async function login() {
         //log(res.body)
         log(res.headers)
         let cookies = res.headers['set-cookie']
-        log(await Utils.File.saveTextFile(cfg.fileCookies, cookies))
+        log(await Utils.File.saveTextFile(__dirname + cfg.fileCookies, cookies))
         log(cookies)
         return cookies
     } catch (error) {
@@ -55,7 +55,7 @@ async function isAuthenticatedCookies() {
     // cookies is in memory
     try {
         if (authenticatedCookies === '' || authenticatedCookies === null || authenticatedCookies === undefined) {
-            authenticatedCookies = [(await Utils.File.readTextFile(cfg.fileCookies))]
+            authenticatedCookies = [(await Utils.File.readTextFile(__dirname + cfg.fileCookies))]
             log('Loaded cookies file:')
             log(authenticatedCookies)
         }
@@ -233,18 +233,8 @@ async function fetchWLSiteAddrs(nameWhiteLabel, typeSite, siteData, skipValidati
     let res = await rp(options)
     let siteAddrs = decrypt(res.body)
     log('siteAddrs.length = %s', siteAddrs.length)
+    return siteAddrs
 }
-
-// TEST FUNCTIONS
-(async function () {
-    //log(await login())
-    //log(await isAuthenticatedCookies(authenticatedCookies))
-    //log(await fetchWLSites(cfg.nameWLTest))
-    //log(await fetchWLDomains(cfg.nameWLTest, 'mb', siteData))
-    //log(await fetchWLSiteAddrs(cfg.nameWLTest, 'mb'))
-    //log(await Utils.File.readCookies(cfg.fileCookies));
-})()
-
 module.exports = {
     isAuthenticatedCookies: isAuthenticatedCookies,
     login: login,

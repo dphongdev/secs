@@ -64,13 +64,13 @@ var Utils = {
                 aesKey64 = CryptoJS.enc.Base64.stringify(key);
                 //Utils.LocalStorage.keyAES64 = aesKey64
                 //console.log('Utils.LocalStorage.keyAES64:%s', aesKey64)
-                Utils.File.saveTextFile(cfg.fileAESKey, aesKey64)
+                Utils.File.saveTextFile(__dirname + cfg.fileAESKey, aesKey64)
                 //localStorage.setItem("aes-key", aesKey64);
             } else {
                 mode = "aes";
                 //aesKey64 = Utils.LocalStorage.keyAES64
                 //console.log('aesKey64:%s', aesKey64)
-                Utils.File.readTextFile(cfg.fileAESKey).then((key) => {
+                Utils.File.readTextFile(__dirname + cfg.fileAESKey).then((key) => {
                     aesKey64 = key
                     console.log('aesKey64:%s', aesKey64)
                 })
