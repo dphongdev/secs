@@ -19,7 +19,7 @@ var Utils = {
         readTextFile: function (fileName) {
             return new Promise((resolve, reject) => {
                 fs.readFile(fileName, 'utf8', function (err, data) {
-                    if (err) return reject(error)
+                    if (err) return reject(err)
                     resolve(data)
                 })
             })
@@ -70,7 +70,7 @@ var Utils = {
                 mode = "aes";
                 //aesKey64 = Utils.LocalStorage.keyAES64
                 //console.log('aesKey64:%s', aesKey64)
-                Utils.File.readTextFile(cfg.fileAESKey).then((key) =>  {
+                Utils.File.readTextFile(cfg.fileAESKey).then((key) => {
                     aesKey64 = key
                     console.log('aesKey64:%s', aesKey64)
                 })

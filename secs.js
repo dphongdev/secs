@@ -139,14 +139,16 @@ async function fetchWLSites(nameWhiteLabel, skipValidationCookies) {
         })
     //log('body:%s', res.body)
     //log(res.headers)
-    return decrypt(res.body).Sites
+    let sites = decrypt(res.body).Sites
+    log('sites.length = %s', sites.length)
+    return sites
 }
 /**
- * 
- * @param {*} nameWhiteLabel 
- * @param {*} siteData 
- * @param {*} type : fore use "ag", "moblie", "mb"
- */
+* 
+* @param {*} nameWhiteLabel 
+* @param {*} siteData 
+* @param {*} type : fore use "ag", "moblie", "mb"
+*/
 function getTypeSite(nameWhiteLabel, siteData, type) {
     let sites = siteData
     let siteId = 0,
@@ -170,15 +172,16 @@ function getTypeSite(nameWhiteLabel, siteData, type) {
     }
     return siteId
 }
-async function fetchWLDomains(nameWhiteLabel, typeSite, siteData) {
-    if (!(await isAuthenticatedCookies())) {
-        log('|==> Cookie is expried')
-        authenticatedCookies = await login()
-    }
-    else {
-        log('|==> Cookie is available. Use AES key')
-        Message = Utils.Http.Message()
-    }
+async function fetchWLDomains(nameWhiteLabel, typeSite, siteData, skipValidationCookies) {
+    if (skipValidationCookies === undefined || skipValidationCookies === false)
+        if (!(await isAuthenticatedCookies())) {
+            log('|==> Cookie is expried')
+            authenticatedCookies = await login()
+        }
+        else {
+            log('|==> Cookie is available. Use AES key')
+            Message = Utils.Http.Message()
+        }
     let data = {
         siteId: getTypeSite(nameWhiteLabel, siteData || await fetchWLSites(nameWhiteLabel, true), typeSite) // ID = 51
     }
@@ -196,19 +199,21 @@ async function fetchWLDomains(nameWhiteLabel, typeSite, siteData) {
         }
     }
     let res = await rp(options)
-    //log(res.body)
-    return decrypt(res.body)
+    let domains = decrypt(res.body)
+    log('domains.length = %s', domains.length)
+    return domains
 }
-async function fetchWLSiteAddrs(nameWhiteLabel, typeSite, siteData) {
-    if (!(await isAuthenticatedCookies())) {
-        log('|==> Cookie is expried')
-        authenticatedCookies = await login()
-    }
-    else {
-        log('|==> Cookie is available. Use AES key')
-        Message = Utils.Http.Message()
-    }
-    
+async function fetchWLSiteAddrs(nameWhiteLabel, typeSite, siteData, skipValidationCookies) {
+    if (skipValidationCookies === undefined || skipValidationCookies === false)
+        if (!(await isAuthenticatedCookies())) {
+            log('|==> Cookie is expried')
+            authenticatedCookies = await login()
+        }
+        else {
+            log('|==> Cookie is available. Use AES key')
+            Message = Utils.Http.Message()
+        }
+
     let data = {
         siteId: getTypeSite(nameWhiteLabel, siteData || await fetchWLSites(nameWhiteLabel, true), typeSite)
     }
@@ -226,8 +231,8 @@ async function fetchWLSiteAddrs(nameWhiteLabel, typeSite, siteData) {
         }
     }
     let res = await rp(options)
-    //log(res.body)
-    return decrypt(res.body)
+    let siteAddrs = decrypt(res.body)
+    log('siteAddrs.length = %s', siteAddrs.length)
 }
 
 // TEST FUNCTIONS
@@ -236,7 +241,7 @@ async function fetchWLSiteAddrs(nameWhiteLabel, typeSite, siteData) {
     //log(await isAuthenticatedCookies(authenticatedCookies))
     //log(await fetchWLSites(cfg.nameWLTest))
     //log(await fetchWLDomains(cfg.nameWLTest, 'mb', siteData))
-    log(await fetchWLSiteAddrs(cfg.nameWLTest, 'mb'))
+    //log(await fetchWLSiteAddrs(cfg.nameWLTest, 'mb'))
     //log(await Utils.File.readCookies(cfg.fileCookies));
 })()
 
@@ -244,5 +249,6 @@ module.exports = {
     isAuthenticatedCookies: isAuthenticatedCookies,
     login: login,
     fetchWLSites: fetchWLSites,
-    fetchWLDomains: fetchWLDomains
+    fetchWLDomains: fetchWLDomains,
+    fetchWLSiteAddrs: fetchWLSiteAddrs
 }
