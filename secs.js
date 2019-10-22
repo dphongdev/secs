@@ -7,8 +7,38 @@ let rp = require('request-promise'),
     Utils = require('./Utils.js'),
     log = console.log,
     Message = null,
-    authenticatedCookies = ''
+    authenticatedCookies = '',
+    socket = null,
+    socketMethod = null;
+var newConsole = (function (originalConsole) {
+    return {
+        log: function (text) {
+            originalConsole.log(text);
+            // Your code
+            if (socket && socketMethod) socket.emit(socketMethod, text)
+        },
+        info: function (text) {
+            originalConsole.info(text);
+            // Your code
+        },
+        warn: function (text) {
+            originalConsole.warn(text);
+            // Your code
+        },
+        error: function (text) {
+            originalConsole.error(text);
+            // Your code
+        }
+    };
+}(console));
+log = newConsole.log
 
+function setSocket(socketClient) {
+    if(!socket) socket = socketClient
+}
+function setSocketMethod(methodName) {
+   if(!socketMethod) socketMethod = methodName
+}
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -109,6 +139,10 @@ async function fetchWLSites(nameWhiteLabel, skipValidationCookies) {
             log('|==> Cookie is available. Use AES key')
             Message = Utils.Http.Message()
         }
+    else {
+        log('|==> Skip Authentication Cookie is available. Use AES key')
+        Message = Utils.Http.Message()
+    }
     //authenticatedCookies = await login()
     log('|==> fetchWLSites: %s', cfg.listWLSiteUrl)
     //log(authenticatedCookies)
@@ -141,6 +175,7 @@ async function fetchWLSites(nameWhiteLabel, skipValidationCookies) {
     //log(res.headers)
     let sites = decrypt(res.body).Sites
     log('sites.length = %s', sites.length)
+    log(sites)
     return sites
 }
 /**
@@ -173,6 +208,7 @@ function getTypeSite(nameWhiteLabel, siteData, type) {
     return siteId
 }
 async function fetchWLDomains(nameWhiteLabel, typeSite, siteData, skipValidationCookies) {
+
     if (skipValidationCookies === undefined || skipValidationCookies === false)
         if (!(await isAuthenticatedCookies())) {
             log('|==> Cookie is expried')
@@ -187,6 +223,8 @@ async function fetchWLDomains(nameWhiteLabel, typeSite, siteData, skipValidation
     }
     await sleep(1000)
     log('|==> Fetch Domain: %s', cfg.listWLDomainUrl)
+    log(nameWhiteLabel)
+    log(typeSite)
     let options = {
         method: 'POST',
         url: cfg.listWLDomainUrl,
@@ -240,5 +278,7 @@ module.exports = {
     login: login,
     fetchWLSites: fetchWLSites,
     fetchWLDomains: fetchWLDomains,
-    fetchWLSiteAddrs: fetchWLSiteAddrs
+    fetchWLSiteAddrs: fetchWLSiteAddrs,
+    setSocketMethod: setSocketMethod,
+    setSocket: setSocket
 }
