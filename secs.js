@@ -1,40 +1,37 @@
 let rp = require('request-promise'),
-    // request = require('request'),
-    // fs = require('fs'),
     cheerio = require('cheerio'),
     cfg = require('./secs.cfg.js'),
     Utils = require('./Utils.js'),
-    log = console.log,
     Message = null,
     authenticatedCookies = '',
     socket = null,
-    socketMethod = null;
-var newConsole = (function (originalConsole) {
-    return {
-        log: function (text) {
-            originalConsole.log(text);
-            // Your code
-            if (socket && socketMethod) {
-                originalConsole.log(socketMethod);
-                //originalConsole.log(socket);
-                socket.emit(socketMethod, text)
+    socketMethod = null,
+    newConsole = (function (originalConsole) {
+        return {
+            log: function (text) {
+                originalConsole.log(text);
+                // Your code
+                if (socket && socketMethod) {
+                    originalConsole.log(socketMethod);
+                    //originalConsole.log(socket);
+                    socket.emit(socketMethod, text)
+                }
+            },
+            info: function (text) {
+                originalConsole.info(text);
+                // Your code
+            },
+            warn: function (text) {
+                originalConsole.warn(text);
+                // Your code
+            },
+            error: function (text) {
+                originalConsole.error(text);
+                // Your code
             }
-        },
-        info: function (text) {
-            originalConsole.info(text);
-            // Your code
-        },
-        warn: function (text) {
-            originalConsole.warn(text);
-            // Your code
-        },
-        error: function (text) {
-            originalConsole.error(text);
-            // Your code
         }
-    };
-}(console));
-log = newConsole.log
+    }(console)),
+    log = newConsole.log;
 
 function setSocket(socketClient) {
     socket = socketClient
@@ -238,9 +235,6 @@ async function fetchSites(nameWhiteLabel, isSkippedValidationCookies) {
     //log(JSON.stringify(sites))
     return sites
 }
-// Test -> passed
-// fetchSites(cfg.listWLSiteUrl,cfg.nameWLTest)
-
 
 async function fetchDomainsBySiteId(siteId, isSkippedValidationCookies) {
     try {
@@ -273,9 +267,8 @@ async function fetchDomainsBySiteId(siteId, isSkippedValidationCookies) {
         log(error)
         return []
     }
-
 }
-// cfg.listWLServerBySiteUrl
+
 async function fetchServerBySiteId(siteId, isSkippedValidationCookies) {
     await skipValidationCookies(isSkippedValidationCookies)
     let data = {
@@ -302,7 +295,33 @@ async function fetchServerBySiteId(siteId, isSkippedValidationCookies) {
     log(`servers.length = ${servers.length}`)
     return servers
 }
-// Test  
+async function fetchAllServers(siteId, isSkippedValidationCookies) {
+    await skipValidationCookies(isSkippedValidationCookies)
+    let data = {
+        siteId: siteId
+    }
+    let url = cfg.listWLServerBySiteUrl
+    log(`|==> Fetch Site Addrs: ${url}`)
+    let options = {
+        method: 'POST',
+        url: url,
+        headers: cfg.headers,
+        form: Message.encryptParams(data),
+        jar: createJar(authenticatedCookies, rp, url),
+        resolveWithFullResponse: true,
+        transform: (body, res) => {
+            return {
+                body: body,
+                headers: res.headers
+            }
+        }
+    }
+    let res = await rp(options)
+    let servers = decrypt(res.body)
+    log(`servers.length = ${servers.length}`)
+    return servers
+}
+
 async function fetchAllWhiteLabelsName(isSkippedValidationCookies) {
     await skipValidationCookies(isSkippedValidationCookies)
     let url = cfg.listWhiteLabelsName
@@ -331,15 +350,8 @@ async function fetchAllWhiteLabelsName(isSkippedValidationCookies) {
     log(listWhiteLabelsName)
     return listWhiteLabelsName
 }
-// Test
-// fetchAllWhiteLabelsName(cfg.listWLNameUrl)
-
-// Get all sites 421 sites
-//fetchWLSites("")
 
 module.exports = {
-    isAuthenticatedCookies: isAuthenticatedCookies,
-    login: login,
     fetchSites: fetchSites,
     fetchDomainsBySiteId: fetchDomainsBySiteId,
     fetchServerBySiteId: fetchServerBySiteId,
