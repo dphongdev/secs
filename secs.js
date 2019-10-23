@@ -1,4 +1,3 @@
-
 let rp = require('request-promise'),
     // request = require('request'),
     // fs = require('fs'),
@@ -15,7 +14,11 @@ var newConsole = (function (originalConsole) {
         log: function (text) {
             originalConsole.log(text);
             // Your code
-            if (socket && socketMethod) socket.emit(socketMethod, text)
+            if (socket && socketMethod) {
+                originalConsole.log(socketMethod);
+                //originalConsole.log(socket);
+                socket.emit(socketMethod, text)
+            }
         },
         info: function (text) {
             originalConsole.info(text);
@@ -34,14 +37,17 @@ var newConsole = (function (originalConsole) {
 log = newConsole.log
 
 function setSocket(socketClient) {
-    if(!socket) socket = socketClient
+    socket = socketClient
 }
+
 function setSocketMethod(methodName) {
-   if(!socketMethod) socketMethod = methodName
+    socketMethod = methodName
 }
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
 function createJar(cookies, rp, url) {
     let jar = rp.jar()
     cookies.forEach((e, i) => {
@@ -53,10 +59,13 @@ function createJar(cookies, rp, url) {
     return jar
 }
 async function login() {
-    log('|==> Login: %s', cfg.loginUrl)
+    log(`|==> Login: ${cfg.loginUrl}`)
     try {
         Message = Utils.Http.Message(cfg.pKey)
-        let encryptedForm = Message.encryptParams({ username: cfg.username, password: cfg.password })
+        let encryptedForm = Message.encryptParams({
+            username: cfg.username,
+            password: cfg.password
+        })
         //log(encryptedForm)
         let options = {
             method: 'POST',
@@ -65,7 +74,10 @@ async function login() {
             form: encryptedForm,
             resolveWithFullResponse: true,
             transform: (body, res) => {
-                return { body, headers: res.headers }
+                return {
+                    body,
+                    headers: res.headers
+                }
             }
         }
         let res = await rp(options)
@@ -89,7 +101,7 @@ async function isAuthenticatedCookies() {
             log('Loaded cookies file:')
             log(authenticatedCookies)
         }
-        log('|==> Send authentication request: %s', cfg.adminUrl)
+        log(`|==> Send authentication request: ${cfg.adminUrl}`)
         let options = {
             method: 'GET',
             url: cfg.adminUrl,
@@ -98,32 +110,36 @@ async function isAuthenticatedCookies() {
             jar: createJar(authenticatedCookies, rp, cfg.adminUrl),
             resolveWithFullResponse: true,
             transform: (body, res) => {
-                return { body: body, headers: res.headers }
+                return {
+                    body: body,
+                    headers: res.headers
+                }
             }
         }
         let res = await rp(options)
         log(res.headers)
         //await Utils.File.saveTextFile('admin' + new Date().getTime() + '.html', res.body)
         let isAuthenticated = cheerio.load(res.body)('#container-admin-account').attr('data-name') === 'admin-account';
-        log('|==> Authencitated: %s', isAuthenticated)
+        log(`|==> Authencitated: ${isAuthenticated}`)
         return isAuthenticated
     } catch (error) {
         log(error)
         return false
     }
 }
+
 function decrypt(body) {
     let json = JSON.parse(body)
     try {
         var result = JSON.parse(json.Result);
-        //log('result.Data: %s | result.IV: %s', result.Data, result.IV)
+        //log(`result.Data: {%s}`| result.IV: {%s}`, result.Data, result.IV)
         var plainText = Message.Decrypt(result.Data, result.IV);
         try {
             json.Result = JSON.parse(plainText);
         } catch (e) {
             json.Result = plainText;
         }
-        //log('Result: %s', json.Result)
+        //log(`Result: {%s}`, json.Result)
     } catch (e) {
         log(e)
     }
@@ -138,20 +154,19 @@ async function fetchWLSites(nameWhiteLabel, skipValidationCookies) {
         else {
             log('|==> Cookie is available. Use AES key')
             Message = Utils.Http.Message()
-        }
-    else {
+        } else {
         log('|==> Skip Authentication Cookie is available. Use AES key')
         Message = Utils.Http.Message()
     }
     //authenticatedCookies = await login()
-    log('|==> fetchWLSites: %s', cfg.listWLSiteUrl)
+    log(`|==> fetchWLSites: ${cfg.listWLSiteUrl}`)
     //log(authenticatedCookies)
     let data = {
         CNAMEID: 0,
         group: "0",
         keyword: nameWhiteLabel,
         pageNum: 1,
-        pageSize: 20,
+        pageSize: 1000,
         proxyID: 0
     }
     await sleep(1000)
@@ -162,7 +177,10 @@ async function fetchWLSites(nameWhiteLabel, skipValidationCookies) {
         form: Message.encryptParams(data),
         jar: createJar(authenticatedCookies, rp, cfg.listWLSiteUrl),
         transform: (body, res) => {
-            return { body: body, headers: res.headers }
+            return {
+                body: body,
+                headers: res.headers
+            }
         }
     }
     //log(options)
@@ -171,19 +189,19 @@ async function fetchWLSites(nameWhiteLabel, skipValidationCookies) {
             log(err.message)
             return []
         })
-    //log('body:%s', res.body)
+    //log(`body:{%s}`, res.body)
     //log(res.headers)
     let sites = decrypt(res.body).Sites
-    log('sites.length = %s', sites.length)
-    log(sites)
+    log(`sites.length = ${sites.length}`)
+    log(JSON.stringify(sites))
     return sites
 }
 /**
-* 
-* @param {*} nameWhiteLabel 
-* @param {*} siteData 
-* @param {*} type : fore use "ag", "moblie", "mb"
-*/
+ * 
+ * @param {*} nameWhiteLabel 
+ * @param {*} siteData 
+ * @param {*} type : fore use "ag", "moblie", "mb"
+ */
 function getTypeSite(nameWhiteLabel, siteData, type) {
     let sites = siteData
     let siteId = 0,
@@ -222,7 +240,7 @@ async function fetchWLDomains(nameWhiteLabel, typeSite, siteData, skipValidation
         siteId: getTypeSite(nameWhiteLabel, siteData || await fetchWLSites(nameWhiteLabel, true), typeSite) // ID = 51
     }
     await sleep(1000)
-    log('|==> Fetch Domain: %s', cfg.listWLDomainUrl)
+    log(`|==> Fetch Domain: ${cfg.listWLDomainUrl}`)
     log(nameWhiteLabel)
     log(typeSite)
     let options = {
@@ -233,12 +251,16 @@ async function fetchWLDomains(nameWhiteLabel, typeSite, siteData, skipValidation
         jar: createJar(authenticatedCookies, rp, cfg.listWLDomainUrl),
         resolveWithFullResponse: true,
         transform: (body, res) => {
-            return { body: body, headers: res.headers }
+            return {
+                body: body,
+                headers: res.headers
+            }
         }
     }
     let res = await rp(options)
     let domains = decrypt(res.body)
-    log('domains.length = %s', domains.length)
+    log(`domains.length = ${domains.length}`)
+    log(domains)
     return domains
 }
 async function fetchWLSiteAddrs(nameWhiteLabel, typeSite, siteData, skipValidationCookies) {
@@ -256,7 +278,7 @@ async function fetchWLSiteAddrs(nameWhiteLabel, typeSite, siteData, skipValidati
         siteId: getTypeSite(nameWhiteLabel, siteData || await fetchWLSites(nameWhiteLabel, true), typeSite)
     }
     await sleep(1000)
-    log('|==> Fetch Site Addrs: %s', cfg.listWLSiteAddrUrl)
+    log(`|==> Fetch Site Addrs: ${cfg.listWLSiteAddrUrl}`)
     let options = {
         method: 'POST',
         url: cfg.listWLSiteAddrUrl,
@@ -265,14 +287,63 @@ async function fetchWLSiteAddrs(nameWhiteLabel, typeSite, siteData, skipValidati
         jar: createJar(authenticatedCookies, rp, cfg.listWLSiteAddrUrl),
         resolveWithFullResponse: true,
         transform: (body, res) => {
-            return { body: body, headers: res.headers }
+            return {
+                body: body,
+                headers: res.headers
+            }
         }
     }
     let res = await rp(options)
     let siteAddrs = decrypt(res.body)
-    log('siteAddrs.length = %s', siteAddrs.length)
+    log(`siteAddrs.length = ${siteAddrs.length}`)
     return siteAddrs
 }
+
+async function fetchWLNames(skipValidationCookies) {
+    if (!skipValidationCookies) {
+        if (!(await isAuthenticatedCookies())) {
+            log('|==> Cookie is expried')
+            authenticatedCookies = await login()
+        }
+        else {
+            log('|==> Cookie is available. Use AES key')
+            Message = Utils.Http.Message()
+            await sleep(1000)
+        }
+    } else {
+        log('|==> Skip Authentication Cookie (Ensure cookies is available). Use AES key')
+        Message = Utils.Http.Message()
+        await sleep(1000)
+    }
+    let url = cfg.listWLNameUrl
+    log(`|==> Fetch WL Names: ${url}`)
+    let options = {
+        method: 'POST',
+        dataType: "json",
+        url: url,
+        headers: cfg.headers,
+        form: Message.encryptParams(undefined),
+        jar: createJar(authenticatedCookies, rp, url),
+        resolveWithFullResponse: true,
+        transform: (body, res) => {
+            return {
+                body: body,
+                headers: res.headers
+            }
+        }
+    }
+    //log(options)
+    let res = await rp(options)
+    //log(res.headers)
+    //log(res.body)
+    let nameWLs = decrypt(res.body)
+    log(`nameWLs.length = ${nameWLs.length}`)
+    log(nameWLs)
+    return nameWLs
+}
+// Get all sites 421 sites
+//fetchWLSites("")
+//fetchWLNames()
 module.exports = {
     isAuthenticatedCookies: isAuthenticatedCookies,
     login: login,
