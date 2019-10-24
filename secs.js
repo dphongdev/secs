@@ -55,6 +55,7 @@ function createJar(cookies, rp, url) {
     })
     return jar
 }
+
 async function login() {
     log(`|==> Login: ${cfg.loginUrl}`)
     try {
@@ -89,6 +90,7 @@ async function login() {
     }
 
 }
+
 async function isAuthenticatedCookies() {
     log('|==> Authenticate cookies')
     // cookies is in memory
@@ -172,6 +174,7 @@ function getSiteId(nameWhiteLabel, siteData, type) {
     }
     return siteId
 }
+
 function decrypt(body) {
     let json = JSON.parse(body)
     try {
@@ -295,18 +298,19 @@ async function fetchServerBySiteId(siteId, isSkippedValidationCookies) {
     log(`servers.length = ${servers.length}`)
     return servers
 }
-async function fetchAllServers(siteId, isSkippedValidationCookies) {
+
+async function fetchAllServers(isSkippedValidationCookies) {
     await skipValidationCookies(isSkippedValidationCookies)
-    let data = {
-        siteId: siteId
-    }
-    let url = cfg.listWLServerBySiteUrl
+    // let data = {
+    //     siteId: siteId
+    // }
+    let url = cfg.listWLServerUrl
     log(`|==> Fetch Site Addrs: ${url}`)
     let options = {
         method: 'POST',
         url: url,
         headers: cfg.headers,
-        form: Message.encryptParams(data),
+        form: Message.encryptParams(undefined),
         jar: createJar(authenticatedCookies, rp, url),
         resolveWithFullResponse: true,
         transform: (body, res) => {
@@ -319,6 +323,7 @@ async function fetchAllServers(siteId, isSkippedValidationCookies) {
     let res = await rp(options)
     let servers = decrypt(res.body)
     log(`servers.length = ${servers.length}`)
+    //log(servers)
     return servers
 }
 
@@ -350,11 +355,11 @@ async function fetchAllWhiteLabelsName(isSkippedValidationCookies) {
     log(listWhiteLabelsName)
     return listWhiteLabelsName
 }
-
 module.exports = {
     fetchSites: fetchSites,
     fetchDomainsBySiteId: fetchDomainsBySiteId,
     fetchServerBySiteId: fetchServerBySiteId,
+    fetchAllServers:fetchAllServers,
     fetchAllWhiteLabelsName: fetchAllWhiteLabelsName,
     setSocketMethod: setSocketMethod,
     setSocket: setSocket,
