@@ -327,6 +327,33 @@ async function fetchAllServers(isSkippedValidationCookies) {
     return servers
 }
 
+//http://prntscr.com/pngy17
+async function fetchBackendId(serverId, isSkippedValidationCookies) {
+    await skipValidationCookies(isSkippedValidationCookies)
+    let data = {
+        backend_id: serverId
+    }
+    let url = cfg.backendIdUrl
+    log(`|==> Fetch Token: ${url}`)
+    let options = {
+        method: 'POST',
+        url: url,
+        headers: cfg.headers,
+        form: Message.encryptParams(data),
+        jar: createJar(authenticatedCookies, rp, url),
+        resolveWithFullResponse: true,
+        transform: (body, res) => {
+            return {
+                body: body,
+                headers: res.headers
+            }
+        }
+    }
+    let res = await rp(options)
+    let bpxBackendId = decrypt(res.body)
+    log(`bpxBackendId = ${bpxBackendId}`)
+    return bpxBackendId
+}
 async function fetchAllWhiteLabelsName(isSkippedValidationCookies) {
     await skipValidationCookies(isSkippedValidationCookies)
     let url = cfg.listWhiteLabelsName
@@ -359,9 +386,10 @@ module.exports = {
     fetchSites: fetchSites,
     fetchDomainsBySiteId: fetchDomainsBySiteId,
     fetchServerBySiteId: fetchServerBySiteId,
-    fetchAllServers:fetchAllServers,
+    fetchAllServers: fetchAllServers,
     fetchAllWhiteLabelsName: fetchAllWhiteLabelsName,
     setSocketMethod: setSocketMethod,
     setSocket: setSocket,
-    getSiteId: getSiteId
+    getSiteId: getSiteId,
+    fetchBackendId: fetchBackendId
 }
