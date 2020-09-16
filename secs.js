@@ -48,10 +48,14 @@ function sleep(ms) {
 function createJar(cookies, rp, url) {
     let jar = rp.jar()
     cookies.forEach((e, i) => {
-        if (i == 0)
-            e.split(';').forEach(cookie => {
-                jar.setCookie(rp.cookie(cookie.trim()), url)
-            })
+        //if (i == 0)
+        e.split(';').forEach(cookie => {
+            log(cookie)
+            // HttpOnly,borderproxy-token=6fGI1Q7KQGsqXQpDwegm2hZuNfsI1tcRWfdqdMDApVA=
+            if(cookie.indexOf('HttpOnly,') > -1)
+                cookie = cookie.substr(10,cookie.length)
+            jar.setCookie(rp.cookie(cookie.trim()), url)
+        })
     })
     return jar
 }
@@ -79,11 +83,11 @@ async function login() {
             }
         }
         let res = await rp(options)
-        //log(res.body)
+        log(res.body)
         log(res.headers)
         let cookies = res.headers['set-cookie']
         log(await Utils.File.saveTextFile(__dirname + cfg.fileCookies, cookies))
-        log(cookies)
+        //log(cookies)
         return cookies
     } catch (error) {
         throw error.message
@@ -95,7 +99,7 @@ async function isAuthenticatedCookies() {
     log('|==> Authenticate cookies')
     // cookies is in memory
     try {
-        if (authenticatedCookies === '' || authenticatedCookies === null || authenticatedCookies === undefined) {
+        if (!authenticatedCookies) {
             authenticatedCookies = [(await Utils.File.readTextFile(__dirname + cfg.fileCookies))]
             log('Loaded cookies file:')
             log(authenticatedCookies)
@@ -115,6 +119,7 @@ async function isAuthenticatedCookies() {
                 }
             }
         }
+        log(options)
         let res = await rp(options)
         log(res.headers)
         //await Utils.File.saveTextFile('admin' + new Date().getTime() + '.html', res.body)
@@ -391,5 +396,7 @@ module.exports = {
     setSocketMethod: setSocketMethod,
     setSocket: setSocket,
     getSiteId: getSiteId,
-    fetchBackendId: fetchBackendId
+    fetchBackendId: fetchBackendId,
+    login: login,
+    isAuthenticatedCookies: isAuthenticatedCookies
 }
